@@ -1,18 +1,20 @@
-import os
+import streamlit as st
 from pinecone import Pinecone, ServerlessSpec
 
 class PineconeVectorDB:
     def __init__(self, index_name: str, dimension: int):
-        api_key = os.getenv("PINECONE_API_KEY")
-        env = os.getenv("PINECONE_ENV")
+        # ✅ Fetch credentials from Streamlit secrets
+        api_key = st.secrets["api"]["pinecone_key"]
+        env = st.secrets["api"]["pinecone_env"]
 
         if not api_key or not env:
-            raise RuntimeError("PINECONE_API_KEY and PINECONE_ENV must be set.")
+            raise RuntimeError("PINECONE_API_KEY and PINECONE_ENV must be set in st.secrets.")
 
         self.dimension = dimension
         self.index_name = index_name
         self.pc = Pinecone(api_key=api_key)
 
+        # ✅ Check and create index if not exists
         index_names = [i.name for i in self.pc.list_indexes()]
         if self.index_name not in index_names:
             self.pc.create_index(
@@ -21,6 +23,7 @@ class PineconeVectorDB:
                 metric="cosine",
                 spec=ServerlessSpec(cloud="aws", region=env)
             )
+
         self.index = self.pc.Index(self.index_name)
 
     def add_document(self, doc_id, embedding, metadata=None):
