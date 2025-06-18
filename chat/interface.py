@@ -5,7 +5,8 @@ import streamlit as st
 hf_token = st.secrets["api"]["hf_token"]
 
 # Use correct HF inference endpoint
-API_URL = "https://api-inference.huggingface.co/models/HuggingFaceH4/zephyr-7b-alpha"
+API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1"
+
 
 # Authentication header
 headers = {
