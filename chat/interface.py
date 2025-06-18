@@ -1,50 +1,43 @@
 import requests
 import streamlit as st
 
-# Load secrets securely
-hf_token = st.secrets["api"]["hf_token"]
+# Load API key securely
+together_api_key = st.secrets["api"]["together_api_key"]
 
-# Use correct HF inference endpoint
-API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.1"
+# Together AI endpoint and model
+API_URL = "https://api.together.xyz/v1/completions"
+MODEL = "mistralai/Mistral-7B-Instruct-v0.1"
 
-
-# Authentication header
+# Headers
 headers = {
-    "Authorization": f"Bearer {hf_token}"
+    "Authorization": f"Bearer {together_api_key}",
+    "Content-Type": "application/json"
 }
 
-# Call Hugging Face Inference API
 def generate_from_api(prompt: str, max_tokens=256):
     payload = {
-        "inputs": prompt,
-        "parameters": {
-            "max_new_tokens": max_tokens,
-            "return_full_text": False
-        }
+        "model": MODEL,
+        "prompt": prompt,
+        "max_tokens": max_tokens,
+        "temperature": 0.7,
+        "stop": ["\n\n"]
     }
 
     try:
         response = requests.post(API_URL, headers=headers, json=payload)
 
-        # Display specific errors in the Streamlit UI
         if response.status_code != 200:
-            st.error(f"❌ HF API Error {response.status_code}: {response.text}")
-            raise Exception(f"HF API error {response.status_code}")
+            st.error(f"❌ Together API Error {response.status_code}: {response.text}")
+            raise Exception(f"Together API error {response.status_code}")
 
-        json_response = response.json()
-
-        # Handle unexpected formats
-        if isinstance(json_response, list) and "generated_text" in json_response[0]:
-            return json_response[0]["generated_text"]
-        else:
-            st.error("⚠️ Unexpected API response format.")
-            return "[No answer generated]"
+        data = response.json()
+        return data["choices"][0]["text"].strip()
 
     except Exception as e:
         st.error(f"🚨 Exception: {str(e)}")
         return "[Error occurred while generating response]"
 
-# LLMInterface wrapper class
+# Wrapper class
 class LLMInterface:
     def ask(self, question: str, context: str = "") -> str:
         prompt = f"""You are a helpful assistant. Use the following context to answer the question.
