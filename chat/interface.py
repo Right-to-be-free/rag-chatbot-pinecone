@@ -1,45 +1,44 @@
-import os
+import os, traceback, sys
 import streamlit as st
 import openai
 
-# Load API key from Streamlit secrets or environment variable
-openai.api_key = st.secrets["api"]["openai_api_key"]
+# 1️⃣  Grab key from secrets *or* env var
+openai.api_key = st.secrets.get("api", {}).get("openai_api_key") \
+                 or os.getenv("OPENAI_API_KEY")
 
-MODEL_NAME = "gpt-3.5-turbo"  # or "gpt-4" if you have access
+if not openai.api_key:
+    st.error("❌ OpenAI key not found – set it in Settings → Secrets")
+    st.stop()
 
-def generate_from_api(prompt: str):
+MODEL_NAME = "gpt-3.5-turbo"          # or "gpt-4o-mini" … etc.
+MAX_TOKENS = 1024                     # keep eye on context length
+
+def generate_from_api(prompt: str) -> str:
     try:
-        response = openai.ChatCompletion.create(
+        # v1-style call; change to ChatCompletion.create if you’re on 0.28
+        resp = openai.chat.completions.create(
             model=MODEL_NAME,
-            messages=[
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
+            messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
-            max_tokens=1024
+            max_tokens=MAX_TOKENS,
         )
-
-        return response['choices'][0]['message']['content'].strip()
+        return resp.choices[0].message.content.strip()
 
     except Exception as e:
-        print("❌ OpenAI API Error:", e)
-        return "⚠️ LLM response error. Please check OpenAI API key or model name."
+        # Surface the real traceback in Cloud logs *and* in the UI
+        traceback.print_exc(file=sys.stderr)
+        st.error(f"❌ OpenAI API Error: {e}")
+        return "⚠️ LLM response error – check key, model name, or usage limits."
 
 
 class LLMInterface:
-    def ask(self, question: str, context: str = ""):
-        prompt = f"""You are a helpful assistant. Use the following context to answer the question.
+    def ask(self, question: str, context: str = "") -> str:
+        prompt = (
+            "You are a helpful assistant. Use the following context to answer "
+            "the question.\n\n"
+            f"Context:\n{context}\n\n"
+            f"Question: {question}\nAnswer:"
+        )
 
-Context:
-{context}
-
-Question: {question}
-Answer:"""
-
-        print("\n📝 Prompt to OpenAI Chat Model:\n", prompt)
-
-        result = generate_from_api(prompt)
-        print("\n✅ LLM Output:\n", result)
-        return result
+        st.write("📝 **Prompt sent to OpenAI:**", prompt[:4000])  # optional debug
+        return generate_from_api(prompt)
