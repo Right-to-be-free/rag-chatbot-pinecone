@@ -4,10 +4,6 @@ from chat.interface import LLMInterface
 import openai
 openai.api_key = st.secrets["api"]["openai_api_key"]
 
-response = openai.ChatCompletion.create(
-    model="gpt-3.5-turbo",
-    messages=[{"role": "user", "content": "Hello, who are you?"}]
-)
 
 st.write(response['choices'][0]['message']['content'])
 
