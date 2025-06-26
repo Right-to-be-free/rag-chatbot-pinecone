@@ -1,67 +1,34 @@
-# llm_interface.py
 import os
 import streamlit as st
-import openai
+import requests
 
-# ───────────────────────────────────────────────────────────────────────────────
-#  API-key handling
-# ───────────────────────────────────────────────────────────────────────────────
-openai.api_key = (
-    st.secrets.get("api", {}).get("openai_api_key")     # Streamlit Cloud
-    or os.getenv("OPENAI_API_KEY")                      # local dev / CI
+# Use Together API key
+TOGETHER_API_KEY = (
+    st.secrets.get("api", {}).get("together_api_key") or os.getenv("TOGETHER_API_KEY")
 )
 
-if not openai.api_key:
-    st.error("❌ OpenAI key not found – add it to .streamlit/secrets.toml")
+if not TOGETHER_API_KEY:
+    st.error("❌ Together API key not found – add it to .streamlit/secrets.toml")
     st.stop()
 
-MODEL_NAME   = "gpt-3.5-turbo"   # change to "gpt-4o-mini" etc. if you have access
-MAX_TOKENS   = 1024
-TEMPERATURE  = 0.7
+API_URL = "https://api.together.xyz/inference/v1/completions"  # Example, change to your model's actual endpoint
 
+headers = {
+    "Authorization": f"Bearer {TOGETHER_API_KEY}",
+    "Content-Type": "application/json"
+}
 
-# ───────────────────────────────────────────────────────────────────────────────
-#  Low-level helper
-# ───────────────────────────────────────────────────────────────────────────────
-def _chat_complete(prompt: str) -> str:
-    """
-    Call the OpenAI Chat API (>=1.0 syntax) and return the assistant's reply.
-    """
-    try:
-        resp = openai.chat.completions.create(
-            model       = MODEL_NAME,
-            messages    = [{"role": "user", "content": prompt}],
-            max_tokens  = MAX_TOKENS,
-            temperature = TEMPERATURE,
-            timeout     = 30,          # avoid hanging forever
-        )
-        return resp.choices[0].message.content.strip()
+def generate_response(prompt: str, max_tokens: int = 256):
+    payload = {
+        "model": "togethercomputer/llama-2-7b-chat",  # replace with your model
+        "prompt": prompt,
+        "max_tokens": max_tokens,
+        "temperature": 0.7
+    }
 
-    except Exception as e:
-        # Log traceback to Streamlit Cloud console
-        import traceback, sys
-        traceback.print_exc(file=sys.stderr)
+    response = requests.post(API_URL, headers=headers, json=payload)
 
-        st.error(f"❌ OpenAI API Error: {e}")
-        return "⚠️  LLM response error – check key, model name, or usage limits."
+    if response.status_code != 200:
+        raise Exception(f"Together API error: {response.status_code} – {response.text}")
 
-
-# ───────────────────────────────────────────────────────────────────────────────
-#  Public interface
-# ───────────────────────────────────────────────────────────────────────────────
-class LLMInterface:
-    """
-    Thin wrapper that builds a nice prompt and calls _chat_complete().
-    """
-
-    def ask(self, question: str, context: str = "") -> str:
-        prompt = (
-            "You are a helpful assistant. Use the following context to answer "
-            "the question.\n\n"
-            f"Context:\n{context}\n\n"
-            f"Question: {question}\nAnswer:"
-        )
-        # Uncomment for debugging:
-        # st.write("📝 Prompt preview:", prompt[:800])
-
-        return _chat_complete(prompt)
+    return response.json()["choices"][0]["text"]
