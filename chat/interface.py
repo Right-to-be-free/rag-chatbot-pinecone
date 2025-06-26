@@ -20,7 +20,7 @@ headers = {
 
 def generate_response(prompt: str, max_tokens: int = 256):
     payload = {
-        "model": "togethercomputer/llama-2-7b-chat",  # replace with your model
+        "model": "togethercomputer/llama-2-7b-chat",  # replace with your Together-supported model
         "prompt": prompt,
         "max_tokens": max_tokens,
         "temperature": 0.7
@@ -32,3 +32,15 @@ def generate_response(prompt: str, max_tokens: int = 256):
         raise Exception(f"Together API error: {response.status_code} – {response.text}")
 
     return response.json()["choices"][0]["text"]
+
+# ✅ Add this
+class LLMInterface:
+    def ask(self, question: str, context: str = "") -> str:
+        prompt = f"""You are a helpful assistant. Use the following context to answer the question.
+
+Context:
+{context}
+
+Question: {question}
+Answer:"""
+        return generate_response(prompt)
