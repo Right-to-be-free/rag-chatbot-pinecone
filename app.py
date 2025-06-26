@@ -33,22 +33,19 @@ Ask me anything from *"How to make Hyderabadi Biryani?"* to *"Explain Kafka part
 ---
 """)
 
+# Optional expandable info section
 with st.expander("📁 About My Knowledge Base"):
     st.markdown("""
     - **Indian Recipes Dataset**: Regional, modern, and traditional recipes with ingredients and instructions.
     - **Generative AI Docs**: Collected insights on transformer models, embeddings, RAG, and LLM pipelines.
     - **Kafka Materials**: Notes on brokers, partitions, producers/consumers, and real-time data flows.
-    - **Legal Help Knowledge**: Summaries and references from Indian civil and arbitration law including:
-        - Section 16 and 23 of the Arbitration Act
-        - Mandate termination clauses for arbitrators
-        - Court precedents on unstamped arbitration agreements
-        - Jurisdictional issues pending with arbitrators
     """)
 
-
+# User interaction
 user_query = st.text_input("🔎 Ask a question about your documents:")
 submit_button = st.button("Submit")
 
+# Process input
 if submit_button and user_query:
     with st.spinner("🔍 Retrieving relevant context..."):
         relevant_docs = doc_manager.query(user_query)
@@ -69,5 +66,6 @@ if submit_button and user_query:
                 st.success("💬 Answer:")
                 st.write(answer)
 
+# Footer
 st.markdown("---")
 st.markdown("✅ Powered by Pinecone + Streamlit | Built by **Rishi** 🚀")
