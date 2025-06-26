@@ -1,8 +1,7 @@
 import streamlit as st
 from document_manager import DocumentManager
 from chat.interface import LLMInterface
-import openai
-openai.api_key = st.secrets["api"]["openai_api_key"]
+
 
 
 st.write(response['choices'][0]['message']['content'])
